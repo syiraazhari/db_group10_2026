@@ -1,1 +1,3 @@
-# db_group10_2026
+# Hotel Reservation System
+
+Phase 1 starter project for XAMPP.
