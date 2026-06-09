@@ -1,64 +1,95 @@
 <?php
-require_once __DIR__ . '/../config/auth.php';
+session_start();
+require_once '../config/config.php';
 
-if (isset($_SESSION['role']) && $_SESSION['role'] === 'staff') {
-    redirect_by_role('staff');
-}
+$error = "";
 
-$error = '';
-$success = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $username = trim($_POST['username'] ?? '');
     $password = trim($_POST['password'] ?? '');
 
-    if ($username === '' || $password === '') {
-        $error = 'Please enter both username and password.';
+    if ($username === "" || $password === "") {
+        $error = "Please enter username and password.";
     } else {
-        $result = login_user($pdo, 'staff', $username, $password);
-        if ($result['success']) {
-            redirect_by_role('staff');
+        $sql = "SELECT * FROM STAFF WHERE Username = ? AND Password = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ss", $username, $password);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($row = $result->fetch_assoc()) {
+            $_SESSION['user_id'] = $row['StaffID'];
+            $_SESSION['username'] = $row['Username'];
+            $_SESSION['role'] = 'staff';
+            header('Location: dashboard.php');
+            exit();
         } else {
-            $error = $result['message'];
+            $error = 'Invalid staff username or password.';
         }
     }
 }
-
-$pageTitle = 'Staff Login';
-include __DIR__ . '/../includes/header.php';
-include __DIR__ . '/../includes/navbar.php';
 ?>
-<div class="form-card">
-    <h1>Staff Login</h1>
-    <p class="small-text">Use the sample credentials from the imported database for this role.</p>
-
-    <?php if ($error): ?>
-        <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0a1931;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-box {
+            background: rgba(255,255,255,0.08);
+            padding: 30px;
+            border-radius: 15px;
+            width: 340px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #35d7ff;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .error {
+            color: #ff6b6b;
+            margin-bottom: 8px;
+        }
+        a {
+            color: #6ee7ff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="login-box">
+    <h2>Staff Login</h2>
+    <?php if ($error !== ""): ?>
+        <div class="error"><?php echo htmlspecialchars($error); ?></div>
     <?php endif; ?>
 
-    <?php if ($success): ?>
-        <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
-    <?php endif; ?>
-
-    <form method="POST" action="">
-        <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" name="username" placeholder="Enter username" required>
-        </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" placeholder="Enter password" required>
-        </div>
-        <button type="submit" class="btn">Login</button>
-        <div class="link-row">
-            <a class="btn btn-secondary" href="/hotel-reservation-system/index.php">Back Home</a>
-        </div>
+    <form method="POST">
+        <input type="text" name="username" placeholder="Staff Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
     </form>
 
-    <div class="panel" style="margin:20px 0 0 0; padding:20px;">
-        <h3>Sample Staff Login</h3>
-        <p class="small-text">Username: <strong>siti_staff</strong></p>
-        <p class="small-text">Password: <strong>staff123</strong></p>
-    </div>
+    <p><a href="../index.php">Back to Home</a></p>
 </div>
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+</body>
+</html>
